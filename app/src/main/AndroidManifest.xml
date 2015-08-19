@@ -38,7 +38,7 @@
 
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/new_app_widget_info" />
+                android:resource="@xml/control_widget_info" />
         </receiver>
     </application>
 

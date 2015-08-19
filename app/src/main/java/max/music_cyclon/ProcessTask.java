@@ -6,14 +6,16 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Adler32;
@@ -50,18 +52,12 @@ public class ProcessTask implements Runnable {
             File target = new File(root, item);
             Adler32 checksum = new Adler32();
 
-//          builder.setContentText(item);
-//          notificationManager.notify(NOTIFICATION_ID, builder.build());
+            InputStream input = prepareConnection(item);
 
-
-            HttpURLConnection connection = prepareConnection(item);
-
-            if (connection == null) {
+            if (input == null) {
                 return;
             }
 
-
-            InputStream input = connection.getInputStream();
             FileOutputStream output = FileUtils.openOutputStream(target);
 
             byte[] buffer = new byte[4 * 1024];
@@ -88,24 +84,36 @@ public class ProcessTask implements Runnable {
         }
     }
 
-    public HttpURLConnection prepareConnection(String item) throws IOException {
+    public InputStream prepareConnection(String item) throws IOException {
+//        URL url = new URL("http", "max-arch", 5785, "/get");
+//
+//        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//        connection.setRequestMethod("POST");
+//        connection.setDoOutput(true);
+//
+//        PrintWriter output = new PrintWriter(connection.getOutputStream());
+//        output.write(item);
+//        output.flush();
+//
+//        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+//            Log.e("ERROR", "Server returned HTTP " + connection.getResponseCode()
+//                    + " " + connection.getResponseMessage());
+//            return null;
+//        }
 
-        URL url = new URL("http", "max-arch", 5000, "/get");
+        CloseableHttpClient httpclient = HttpClients.createDefault();
 
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
+        HttpPost httpPost = new HttpPost("http://max-arch:5785/get");
 
-        PrintWriter output = new PrintWriter(connection.getOutputStream());
-        output.write(item);
-        output.flush();
+        httpPost.setEntity(new ByteArrayEntity(item.getBytes("UTF-8")));
 
-        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-            Log.e("ERROR", "Server returned HTTP " + connection.getResponseCode()
-                    + " " + connection.getResponseMessage());
+        CloseableHttpResponse response = httpclient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            Log.e("ERROR", "Server returned HTTP " + response.getStatusLine().getStatusCode());
             return null;
         }
 
-        return connection;
+        return response.getEntity().getContent();
     }
 }

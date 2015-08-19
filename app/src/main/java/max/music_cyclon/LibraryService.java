@@ -4,6 +4,7 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.JsonReader;
@@ -63,17 +64,16 @@ public class LibraryService extends IntentService {
                 .setSmallIcon(R.mipmap.ic_launcher);
     }
 
-
     private NotificationCompat.Builder progressNotificationBuilder() {
         return notificationBuilder().setUsesChronometer(true)
                 .setOngoing(true)
                 .setProgress(0, 0, true);
     }
 
-
     @Override
     protected void onHandleIntent(Intent intent) {
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        ExecutorService executor = Executors.newFixedThreadPool(Integer.parseInt(settings.getString("threads", "2")));
 
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
@@ -94,14 +94,14 @@ public class LibraryService extends IntentService {
         try {
             builder.setContentTitle("Fetching music information");
             notificationManager.notify(NOTIFICATION_ID, builder.build());
-            items = fetchRandom(1000);
+            items = fetchRandom(Integer.parseInt(settings.getString("download", "10")));
 
             builder.setContentTitle("Cleaning library");
             notificationManager.notify(NOTIFICATION_ID, builder.build());
             tracker.delete();
         } catch (IOException e) {
             Log.wtf("WTF", e);
-            notificationManager.cancel(NOTIFICATION_ID);
+            notificationManager.notify(NOTIFICATION_ID, notificationBuilder().setContentTitle("Remote not available").build());
             return;
         }
 
@@ -112,11 +112,11 @@ public class LibraryService extends IntentService {
         }
 
         builder.setContentTitle("Mixing new music!");
-//        builder.setProgress(1, 0, false);
+        builder.setProgress(items.size(), 0, false);
         notificationManager.notify(NOTIFICATION_ID, builder.build());
 
-        final CountDownLatch latch = new CountDownLatch(items.size());
 
+        CountDownLatch latch = new CountDownLatch(items.size());
 
         for (int i = 0, size = items.size(); i < size; i++) {
             executor.submit(new ProcessTask(latch, items.get(i), tracker,

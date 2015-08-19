@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Preference
+        android:key="start"
+        android:summary="Starts the download"
+        android:title="Start Service" />
+
+    <EditTextPreference
+        android:defaultValue="2"
+        android:inputType="number"
+        android:key="threads"
+        android:summary="Number of threads to use for downloading"
+        android:title="Threads" />
+
+    <EditTextPreference
+        android:defaultValue="1000"
+        android:inputType="number"
+        android:key="download"
+        android:summary="Approximately amount in MB to download"
+        android:title="Download size" />
+
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="start_charging"
+        android:summary="This option if selected will allow to start the download if connected with a ac charger"
+        android:title="Charging starts download" />
+
+    <EditTextPreference
+        android:defaultValue="7"
+        android:inputType="number"
+        android:key="min_download_interval"
+        android:summary="Minimum download interval in days"
+        android:title="Download interval" />
+
+
+    <max.music_cyclon.InfoPreference
+        android:summary="0.1"
+        android:title="Application info" />
+
+</PreferenceScreen>
