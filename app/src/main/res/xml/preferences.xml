@@ -6,6 +6,14 @@
         android:summary="Starts the download"
         android:title="Start Service" />
 
+
+    <EditTextPreference
+        android:defaultValue="http://localhost:5785"
+        android:inputType="text"
+        android:key="address"
+        android:summary="Address of the synchronisation server"
+        android:title="Address" />
+
     <EditTextPreference
         android:defaultValue="2"
         android:inputType="number"

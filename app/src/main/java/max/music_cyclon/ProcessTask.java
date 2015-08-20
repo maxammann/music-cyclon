@@ -22,6 +22,7 @@ import java.util.zip.Adler32;
 
 public class ProcessTask implements Runnable {
 
+    private String address;
     private final CountDownLatch latch;
 
     private final String item;
@@ -32,8 +33,9 @@ public class ProcessTask implements Runnable {
     private final NotificationCompat.Builder builder;
     private final NotificationManagerCompat notificationManager;
 
-    public ProcessTask(CountDownLatch latch, String item, FileTracker tracker,
-                       AtomicInteger current, int maximum,NotificationCompat.Builder builder, NotificationManagerCompat notificationCompat) {
+    public ProcessTask(String address, CountDownLatch latch, String item, FileTracker tracker,
+                       AtomicInteger current, int maximum, NotificationCompat.Builder builder, NotificationManagerCompat notificationCompat) {
+        this.address = address;
         this.latch = latch;
         this.item = item;
 
@@ -48,28 +50,30 @@ public class ProcessTask implements Runnable {
     public void run() {
         File root = new File(Environment.getExternalStorageDirectory(), "library");
 
+
         try {
             File target = new File(root, item);
             Adler32 checksum = new Adler32();
 
-            InputStream input = prepareConnection(item);
+            InputStream input = prepareConnection(address, item);
 
-            if (input == null) {
-                return;
+            if (input != null) {
+
+                FileOutputStream output = FileUtils.openOutputStream(target);
+
+                byte[] buffer = new byte[4 * 1024];
+                int n;
+                while (-1 != (n = input.read(buffer))) {
+                    output.write(buffer, 0, n);
+                    checksum.update(buffer, 0, n);
+                }
+
+                output.flush();
+                output.close();
+                input.close();
             }
 
-            FileOutputStream output = FileUtils.openOutputStream(target);
-
-            byte[] buffer = new byte[4 * 1024];
-            int n;
-            while (-1 != (n = input.read(buffer))) {
-                output.write(buffer, 0, n);
-                checksum.update(buffer, 0, n);
-            }
-
-            output.flush();
-            output.close();
-            input.close();
+//          todo else error
 
             tracker.track(target, checksum.getValue());
 
@@ -84,26 +88,10 @@ public class ProcessTask implements Runnable {
         }
     }
 
-    public InputStream prepareConnection(String item) throws IOException {
-//        URL url = new URL("http", "max-arch", 5785, "/get");
-//
-//        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//        connection.setRequestMethod("POST");
-//        connection.setDoOutput(true);
-//
-//        PrintWriter output = new PrintWriter(connection.getOutputStream());
-//        output.write(item);
-//        output.flush();
-//
-//        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-//            Log.e("ERROR", "Server returned HTTP " + connection.getResponseCode()
-//                    + " " + connection.getResponseMessage());
-//            return null;
-//        }
-
+    public InputStream prepareConnection(String address, String item) throws IOException {
         CloseableHttpClient httpclient = HttpClients.createDefault();
 
-        HttpPost httpPost = new HttpPost("http://max-arch:5785/get");
+        HttpPost httpPost = new HttpPost(address + "/get");
 
         httpPost.setEntity(new ByteArrayEntity(item.getBytes("UTF-8")));
 

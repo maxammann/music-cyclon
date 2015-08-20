@@ -10,13 +10,17 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.util.JsonReader;
 import android.util.Log;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -42,11 +46,20 @@ public class LibraryService extends IntentService {
         this.port = port;
     }
 
-    public List<String> fetchRandom(int amount) throws IOException {
-        URL url = new URL("http", host, port, "/random/" + amount);
-        InputStream in = url.openStream();
+    public List<String> fetchRandom(String address, int amount) throws IOException {
+        CloseableHttpClient httpclient = HttpClients.createDefault();
 
-        JsonReader reader = new JsonReader(new BufferedReader(new InputStreamReader(in, "UTF-8")));
+        HttpGet httpGet = new HttpGet(address + "/random/" + amount);
+
+
+        CloseableHttpResponse response = httpclient.execute(httpGet);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            Log.e("ERROR", "Server returned HTTP " + response.getStatusLine().getStatusCode());
+            return Collections.emptyList();
+        }
+
+        JsonReader reader = new JsonReader(new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8")));
 
         ArrayList<String> items = new ArrayList<>();
 
@@ -75,6 +88,8 @@ public class LibraryService extends IntentService {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         ExecutorService executor = Executors.newFixedThreadPool(Integer.parseInt(settings.getString("threads", "2")));
 
+        String address = settings.getString("address", "127.0.0.1");
+
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         NotificationCompat.Builder builder = progressNotificationBuilder().setContentTitle("Aktualisiere Musik");
@@ -94,7 +109,7 @@ public class LibraryService extends IntentService {
         try {
             builder.setContentTitle("Fetching music information");
             notificationManager.notify(NOTIFICATION_ID, builder.build());
-            items = fetchRandom(Integer.parseInt(settings.getString("download", "10")));
+            items = fetchRandom(address, Integer.parseInt(settings.getString("download", "10")));
 
             builder.setContentTitle("Cleaning library");
             notificationManager.notify(NOTIFICATION_ID, builder.build());
@@ -119,7 +134,7 @@ public class LibraryService extends IntentService {
         CountDownLatch latch = new CountDownLatch(items.size());
 
         for (int i = 0, size = items.size(); i < size; i++) {
-            executor.submit(new ProcessTask(latch, items.get(i), tracker,
+            executor.submit(new ProcessTask(address, latch, items.get(i), tracker,
                     current, items.size(), builder, notificationManager));
         }
 

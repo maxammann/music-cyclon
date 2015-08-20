@@ -15,7 +15,7 @@ public class PowerConnectionReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-        boolean start = Boolean.parseBoolean(settings.getString("start_charging", "false"));
+        boolean start = settings.getBoolean("start_charging", false);
 
         if (!start) {
             return;
