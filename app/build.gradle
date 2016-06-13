@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "22.0.1"
+    buildToolsVersion "23.0.3"
 
     defaultConfig {
         applicationId "max.music_cyclon"
@@ -21,8 +21,10 @@ dependencies {
     compile "cz.msebera.android:httpclient:4.4.1.2"
     compile 'commons-io:commons-io:2.4'
 
-//    compile 'com.android.support:appcompat-v7:23.4.0'
-//    compile 'com.android.support:preference-v14:23.4.0'
+//  compile 'com.android.support:appcompat-v7:23.4.0'
+//  and
+//  compile 'com.android.support:preference-v14:23.4.0'
+//  are provided by:
     compile 'com.takisoft.fix:preference-v7:23.4.0.4'
 
     compile 'com.android.support:appcompat-v7:23.4.0'

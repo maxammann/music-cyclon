@@ -2,18 +2,24 @@ package max.music_cyclon;
 
 import android.os.Bundle;
 import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceScreen;
 import android.support.v7.preference.TwoStatePreference;
 
 import com.takisoft.fix.support.v7.preference.EditTextPreference;
 import com.takisoft.fix.support.v7.preference.PreferenceFragmentCompat;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
+/**
+ * A fragment which holds one {@link SynchronizeConfig} and displays it's content for
+ * simple editing.
+ */
 public class SynchronizeConfigFragment extends PreferenceFragmentCompat {
 
     private String name;
     private PagerAdapter pagerAdapter;
-    private Config config;
+    private SynchronizeConfig config;
 
     @Override
     public void onCreate(final Bundle savedInstanceState) {
@@ -24,19 +30,26 @@ public class SynchronizeConfigFragment extends PreferenceFragmentCompat {
 
         ConfigUpdater updater = new ConfigUpdater();
 
-        for (int i = 0; i < getPreferenceScreen().getPreferenceCount(); i++) {
-            Preference preference = getPreferenceScreen().getPreference(i);
-            if (config.getJson().has(preference.getKey())) {
+        JSONObject json = config.getJson();
+
+        PreferenceScreen screen = getPreferenceScreen();
+        for (int i = 0; i < screen.getPreferenceCount(); i++) {
+            Preference preference = screen.getPreference(i);
+
+            if (json.has(preference.getKey())) {
                 if (preference instanceof TwoStatePreference) {
-                    ((TwoStatePreference) preference).setChecked(config.getJson().optBoolean(preference.getKey()));
+                    boolean data = json.optBoolean(preference.getKey());
+                    ((TwoStatePreference) preference).setChecked(data);
                 } else if (preference instanceof EditTextPreference) {
-                    ((EditTextPreference) preference).setText(config.getJson().optString(preference.getKey()));
+                    String data = json.optString(preference.getKey());
+                    ((EditTextPreference) preference).setText(data);
                 }
             }
 
             preference.setOnPreferenceChangeListener(updater);
         }
 
+        // The remove listener
         Preference removePreference = findPreference("remove");
         removePreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
@@ -64,7 +77,6 @@ public class SynchronizeConfigFragment extends PreferenceFragmentCompat {
         return name;
     }
 
-
     public PagerAdapter getPagerAdapter() {
         return pagerAdapter;
     }
@@ -73,21 +85,26 @@ public class SynchronizeConfigFragment extends PreferenceFragmentCompat {
         this.pagerAdapter = pagerAdapter;
     }
 
-    public void setConfig(Config config) {
+    public void setConfig(SynchronizeConfig config) {
         this.config = config;
+    }
+
+    public SynchronizeConfig getConfig() {
+        return config;
     }
 
     private class ConfigUpdater implements Preference.OnPreferenceChangeListener {
         @Override
         public boolean onPreferenceChange(Preference preference, Object o) {
             String key = preference.getKey();
-            try {
-                config.getJson().put(key, o);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+            JSONObject config = getConfig().getJson();
 
-            return true;
+            try {
+                config.put(key, o);
+                return true;
+            } catch (JSONException e) {
+                return false;
+            }
         }
     }
 }

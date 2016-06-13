@@ -24,10 +24,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -43,7 +40,7 @@ import cz.msebera.android.httpclient.client.methods.CloseableHttpResponse;
 import cz.msebera.android.httpclient.client.methods.HttpGet;
 import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
 import cz.msebera.android.httpclient.impl.client.HttpClients;
-import max.music_cyclon.Config;
+import max.music_cyclon.SynchronizeConfig;
 import max.music_cyclon.service.db.FileTracker;
 
 public class LibraryService extends IntentService {
@@ -90,7 +87,7 @@ public class LibraryService extends IntentService {
         super("max.music_cyclon.service.LibraryService");
     }
 
-    public List<Item> fetchRandom(String address, Config config, Resources resources) throws IOException {
+    public List<Item> fetchRandom(String address, SynchronizeConfig config, Resources resources) throws IOException {
         StringBuilder get;
 
         if (config.isAlbum(resources)) {
@@ -249,7 +246,7 @@ public class LibraryService extends IntentService {
         }
 
         for (Parcelable parcelable : configs) {
-            Config config = (Config) parcelable;
+            SynchronizeConfig config = (SynchronizeConfig) parcelable;
             List<Item> items;
             try {
                 updater.showMessage("Fetching music information for %s", config.getName());

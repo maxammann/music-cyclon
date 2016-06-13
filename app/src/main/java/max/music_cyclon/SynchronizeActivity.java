@@ -2,6 +2,7 @@ package max.music_cyclon;
 
 
 import android.Manifest;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -19,39 +20,64 @@ import android.os.RemoteException;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+
+import com.google.samples.apps.iosched.ui.widget.SlidingTabLayout;
 
 import org.json.JSONException;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import max.music_cyclon.service.LibraryService;
-import max.music_cyclon.slidingtab.SlidingTabLayout;
 
-
+/**
+ * The main activity for synchronisation
+ * <p>
+ * This class manages:
+ * <ul>
+ * <li>
+ *     the {@link PagerAdapter} with the references to all configs and their loading and saving.
+ * </li>
+ * <li>the link to the {@link LibraryService} with bi-directional message dispatching</li>
+ * <li>the general layout</li>
+ * <li>permission requests</li>
+ * </ul>
+ *
+ */
 public class SynchronizeActivity extends AppCompatActivity {
 
     private PagerAdapter pagerAdapter;
 
-    /** Messenger for communicating with service. */
-    Messenger mService = null;
-    /** Flag indicating whether we have called bind on the service. */
-    private boolean mIsBound;
+    /**
+     * Messenger for communicating with service.
+     */
+    private Messenger serviceObject = null;
+    /**
+     * Flag indicating whether we have called bind on the service.
+     */
+    private boolean isBound;
+
+    /**
+     * The dialog which is being displayed while a sync is in progress
+     */
+    private ProgressDialog syncProgress = null;
 
     /**
      * Target we publish for clients to send messages to IncomingHandler.
      */
-    private final Messenger mMessenger = new Messenger(new IncomingHandler());
-    private ProgressDialog syncProgress;
+    private final Messenger mMessenger = new Messenger(new IncomingHandler(new WeakReference<>(this)));
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,15 +87,13 @@ public class SynchronizeActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(toolbar);
 
-        List<Config> configs = Collections.emptyList();
+        List<SynchronizeConfig> configs = Collections.emptyList();
         try {
             FileInputStream in = openFileInput("configs.json");
-            configs = Config.load(in);
+            configs = SynchronizeConfig.load(in);
             in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
+        } catch (IOException | JSONException e) {
+            Log.e("CONFIG", "Failed loading the config", e);
         }
 
         pagerAdapter = new PagerAdapter(configs, getSupportFragmentManager());
@@ -83,11 +107,12 @@ public class SynchronizeActivity extends AppCompatActivity {
         // Initialize tabs
         final SlidingTabLayout tabs = (SlidingTabLayout) findViewById(R.id.tabs);
         assert tabs != null;
+
         tabs.setDistributeEvenly(true);
         tabs.setCustomTabColorizer(new SlidingTabLayout.TabColorizer() {
             @Override
             public int getIndicatorColor(int position) {
-                return getResources().getColor(R.color.accentColor);
+                return ContextCompat.getColor(SynchronizeActivity.this, R.color.accentColor);
             }
         });
 
@@ -111,42 +136,44 @@ public class SynchronizeActivity extends AppCompatActivity {
             }
         });
 
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        // Request permissions
+        requestPermissions();
+    }
+
+    private void requestPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-
-                // Show an expanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
-            } else {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        0);
-            }
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    0);
         }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+
+        unbindLibraryService();
+
         try {
             FileOutputStream fos = openFileOutput("configs.json", Context.MODE_PRIVATE);
             getPagerAdapter().save(fos);
             fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
+        } catch (IOException | JSONException e) {
+            Log.e("CONFIG", "Failed saving the config", e);
         }
     }
 
     public PagerAdapter getPagerAdapter() {
         return pagerAdapter;
+    }
+
+    public Dialog getSyncProgress() {
+        return syncProgress;
+    }
+
+    public void clearSyncProgress() {
+        syncProgress = null;
     }
 
     @Override
@@ -162,15 +189,18 @@ public class SynchronizeActivity extends AppCompatActivity {
                 Intent preferenceIntent = new Intent(this, MainPreferenceActivity.class);
                 startActivity(preferenceIntent);
                 return true;
-
+            case R.id.action_version:
+                notYetImplemented(this);
+                break;
+            case R.id.action_help:
+                notYetImplemented(this);
+                break;
             case R.id.action_sync:
-                Intent intent = new Intent(SynchronizeActivity.this, LibraryService.class);
-                List<Config> configs = getPagerAdapter().getConfigData();
-                intent.putExtra("configs", configs.toArray(new Config[configs.size()]));
-                SynchronizeActivity.this.startService(intent);
+                startLibraryService();
 
-                doBindService();
+                bindLibraryService();
 
+                // Show sync control dialog
                 syncProgress = new ProgressDialog(SynchronizeActivity.this);
                 syncProgress.setMessage("Synchronizing");
                 syncProgress.setCancelable(false);
@@ -182,19 +212,36 @@ public class SynchronizeActivity extends AppCompatActivity {
                 });
                 syncProgress.show();
                 return true;
-
             default:
                 return super.onOptionsItemSelected(item);
-
         }
+
+        return false;
     }
 
-    private class IncomingHandler extends Handler {
+    public static void notYetImplemented(Context context) {
+        new AlertDialog.Builder(context).setMessage("Not yet implemented!").show();
+    }
+
+    private static class IncomingHandler extends Handler {
+        private final WeakReference<SynchronizeActivity> activity;
+
+        private IncomingHandler(WeakReference<SynchronizeActivity> activity) {
+            this.activity = activity;
+        }
+
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case LibraryService.MSG_FINISHED:
-                    syncProgress.dismiss();
+                    SynchronizeActivity activity = this.activity.get();
+                    if (activity != null) {
+                        Dialog dialog = activity.getSyncProgress();
+                        if (dialog != null) {
+                            dialog.dismiss();
+                            activity.clearSyncProgress();
+                        }
+                    }
                     break;
                 default:
                     super.handleMessage(msg);
@@ -207,12 +254,12 @@ public class SynchronizeActivity extends AppCompatActivity {
      */
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
-            mService = new Messenger(service);
+            serviceObject = new Messenger(service);
 
             try {
                 Message msg = Message.obtain(null, LibraryService.MSG_REGISTER_CLIENT);
                 msg.replyTo = mMessenger;
-                mService.send(msg);
+                serviceObject.send(msg);
             } catch (RemoteException ignored) {
                 // In this case the service has crashed before we could even
                 // do anything with it; we can count on soon being
@@ -222,37 +269,39 @@ public class SynchronizeActivity extends AppCompatActivity {
         }
 
         public void onServiceDisconnected(ComponentName className) {
-            mService = null;
+            serviceObject = null;
         }
     };
 
-    void doBindService() {
+    private void startLibraryService() {
+        Intent intent = new Intent(SynchronizeActivity.this, LibraryService.class);
+        List<SynchronizeConfig> configs = getPagerAdapter().getConfigData();
+        intent.putExtra("configs", configs.toArray(new SynchronizeConfig[configs.size()]));
+        SynchronizeActivity.this.startService(intent);
+    }
+
+    private void bindLibraryService() {
         bindService(new Intent(
                 SynchronizeActivity.this,
                 LibraryService.class
         ), mConnection, Context.BIND_AUTO_CREATE);
-        mIsBound = true;
+        isBound = true;
     }
 
-    void doUnbindService() {
-        if (mIsBound) {
-            // If we have received the service, and hence registered with
-            // it, then now is the time to unregister.
-            if (mService != null) {
+    private void unbindLibraryService() {
+        if (isBound) {
+            if (serviceObject != null) {
                 try {
-                    Message msg = Message.obtain(null,
-                            LibraryService.MSG_UNREGISTER_CLIENT);
+                    Message msg = Message.obtain(null, LibraryService.MSG_UNREGISTER_CLIENT);
                     msg.replyTo = mMessenger;
-                    mService.send(msg);
-                } catch (RemoteException e) {
-                    // There is nothing special we need to do if the service
-                    // has crashed.
+                    serviceObject.send(msg);
+                } catch (RemoteException ignored) {
                 }
             }
 
             // Detach our existing connection.
             unbindService(mConnection);
-            mIsBound = false;
+            isBound = false;
         }
     }
 }

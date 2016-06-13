@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package max.music_cyclon.slidingtab;
+package com.google.samples.apps.iosched.ui.widget;
 
 import android.content.Context;
 import android.graphics.Typeface;
@@ -311,9 +311,6 @@ public class SlidingTabLayout extends HorizontalScrollView {
         public void onClick(View v) {
             for (int i = 0; i < mTabStrip.getChildCount(); i++) {
                 if (v == mTabStrip.getChildAt(i)) {
-                    if (mViewPager.getChildAt(i) == null) {
-                        continue;
-                    }
                     mViewPager.setCurrentItem(i);
                     return;
                 }

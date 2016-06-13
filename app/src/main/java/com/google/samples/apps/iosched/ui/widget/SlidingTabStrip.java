@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package max.music_cyclon.slidingtab;
+package com.google.samples.apps.iosched.ui.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;

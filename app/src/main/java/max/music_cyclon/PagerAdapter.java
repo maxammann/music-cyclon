@@ -13,29 +13,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Holds the fragments for the configuration of all {@link SynchronizeConfig}s
+ */
 public class PagerAdapter extends FragmentStatePagerAdapter {
-
 
     private final List<String> configs = new ArrayList<>();
 
-    private final Map<String, Config> configData = new HashMap<>();
+    private final Map<String, SynchronizeConfig> configData = new HashMap<>();
 
-    public PagerAdapter(List<Config> configs , FragmentManager fm) {
+    public PagerAdapter(List<SynchronizeConfig> configs , FragmentManager fm) {
         super(fm);
 
 
-        for (Config config : configs) {
+        for (SynchronizeConfig config : configs) {
             this.configs.add(config.getName());
             this.configData.put(config.getName(), config);
         }
     }
 
     public void save(OutputStream os) throws JSONException, IOException {
-        Config.save(configData.values(), os);
+        SynchronizeConfig.save(configData.values(), os);
     }
 
     public boolean add(String name) {
-        configData.put(name, new Config(name));
+        configData.put(name, new SynchronizeConfig(name));
         return configs.add(name);
     }
 
@@ -71,7 +73,7 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
         return configs;
     }
 
-    public List<Config> getConfigData() {
+    public List<SynchronizeConfig> getConfigData() {
         return new ArrayList<>(configData.values());
     }
 
