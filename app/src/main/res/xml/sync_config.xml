@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen android:persistent="false" xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <EditTextPreference
+        android:persistent="false"
+        android:defaultValue="@integer/size"
+        android:inputType="number"
+        android:key="size"
+        android:summary="Approximately amount to download"
+        android:title="Download size" />
+
+    <!--<SwitchPreference-->
+        <!--android:persistent="false"-->
+        <!--android:defaultValue="@bool/random"-->
+        <!--android:key="random"-->
+        <!--android:summary=""-->
+        <!--android:title="Select title/albums randomly" />-->
+
+    <SwitchPreference
+        android:persistent="false"
+        android:defaultValue="@bool/use_albums"
+        android:key="use_albums"
+        android:summary=""
+        android:title="Download only complete albums" />
+
+    <EditTextPreference
+        android:persistent="false"
+        android:defaultValue="@string/query"
+        android:inputType="text"
+        android:key="query"
+        android:summary=""
+        android:title="Query string" />
+
+    <SwitchPreference
+        android:persistent="false"
+        android:defaultValue="@bool/start_charging"
+        android:key="start_charging"
+        android:summary="This option if selected will allow to start the download if connected with a ac charger"
+        android:title="Charging starts download" />
+
+    <EditTextPreference
+        android:persistent="false"
+        android:defaultValue="@integer/download_interval"
+        android:inputType="number"
+        android:key="download_interval"
+        android:summary="Download interval in days"
+        android:title="Download interval" />
+
+    <Preference
+        android:persistent="false"
+        android:key="remove"
+        android:summary="Remove this config"
+        android:title="Remove" />
+</PreferenceScreen>

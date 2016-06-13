@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">music-cyclon</string>
+    <string name="title_activity_synchronize">Synchronizing</string>
+    <string name="synchronize">Synchronize</string>
 </resources>

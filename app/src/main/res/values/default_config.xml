@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="size">10</integer>
+    <bool name="random">true</bool>
+    <bool name="use_albums">true</bool>
+    <string name="query"/>
+    <bool name="start_charging">false</bool>
+    <integer name="download_interval">7</integer>
+
+
+</resources>

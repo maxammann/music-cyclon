@@ -1,48 +1,60 @@
-package max.music_cyclon;
+package max.music_cyclon.service.db;
 
 
-import android.annotation.SuppressLint;
-import android.content.SharedPreferences;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Map;
 import java.util.zip.Adler32;
 
 public class FileTracker {
 
-    private SharedPreferences.Editor editor;
-    private SharedPreferences preferences;
 
-    @SuppressLint("CommitPrefEdits")
-    public FileTracker(SharedPreferences preferences) {
-        this.preferences = preferences;
-        this.editor = preferences.edit();
+    private final LibraryDBOpenHelper helper;
+
+    public FileTracker(Context context) {
+        helper = new LibraryDBOpenHelper(context);
     }
 
     public void track(File file, long checksum) {
-        editor.putLong(file.getAbsolutePath(), checksum);
+        SQLiteDatabase db = helper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("path", file.getAbsolutePath());
+        values.put("checksum", checksum);
+
+        db.insert("library", null, values);
+        db.close();
     }
 
     public void delete() throws IOException {
-        Map<String, ?> preferences = this.preferences.getAll();
+        SQLiteDatabase db = helper.getReadableDatabase();
 
-        for (Map.Entry<String, ?> entry : preferences.entrySet()) {
-            if (!(entry.getValue() instanceof Long)) {
-                continue;
-            }
+        Cursor cursor = db.query("library", null, null, null, null, null, null);
+        int pathIndex = cursor.getColumnIndex("path");
+        int checksumIndex = cursor.getColumnIndex("checksum");
 
-            File file = new File(entry.getKey());
+        while (cursor.moveToNext()) {
+            long checksum = cursor.getLong(checksumIndex);
+            String path = cursor.getString(pathIndex);
 
-            if (((Long) entry.getValue()) != checksum(file)) {
+
+            File file = new File(path);
+
+            if (checksum != checksum(file)) {
                 continue;
             }
 
             removeFile(file);
         }
+
+        cursor.close();
+        db.close();
     }
 
     private long checksum(File file) throws IOException {
@@ -77,9 +89,5 @@ public class FileTracker {
         }
 
         removeFile(path.getParentFile());
-    }
-
-    public void commit() {
-        editor.apply();
     }
 }

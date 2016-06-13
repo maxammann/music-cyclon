@@ -1,21 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
+    compileSdkVersion 23
     buildToolsVersion "22.0.1"
 
     defaultConfig {
         applicationId "max.music_cyclon"
-        minSdkVersion 21
-        targetSdkVersion 22
+        minSdkVersion 14
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
-    }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -24,8 +18,13 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:22.0.0'
+    compile "cz.msebera.android:httpclient:4.4.1.2"
     compile 'commons-io:commons-io:2.4'
-    compile group: 'org.apache.httpcomponents' , name: 'httpclient-android' , version: '4.3.5.1'
+
+//    compile 'com.android.support:appcompat-v7:23.4.0'
+//    compile 'com.android.support:preference-v14:23.4.0'
+    compile 'com.takisoft.fix:preference-v7:23.4.0.4'
+
+    compile 'com.android.support:appcompat-v7:23.4.0'
+    compile 'com.android.support:design:23.4.0'
 }

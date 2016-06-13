@@ -1,4 +1,4 @@
-package max.music_cyclon;
+package max.music_cyclon.service;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
