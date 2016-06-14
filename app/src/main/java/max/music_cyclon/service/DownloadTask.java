@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.zip.Adler32;
 
@@ -22,18 +21,19 @@ import okhttp3.Response;
 public class DownloadTask implements Runnable {
 
     private final SynchronizeConfig config;
-    private final URI uri;
+    private final String url;
     private final String itemPath;
 
     private final FileTracker tracker;
     private final ProgressUpdater progressUpdater;
     private CountDownLatch itemsLeftLatch;
+    public static final OkHttpClient CLIENT = new OkHttpClient();
 
 
-    public DownloadTask(SynchronizeConfig config, URI uri, String itemPath,
+    public DownloadTask(SynchronizeConfig config, String url, String itemPath,
                         FileTracker tracker, ProgressUpdater progressUpdater) {
         this.config = config;
-        this.uri = uri;
+        this.url = url;
         this.itemPath = itemPath;
 
         this.tracker = tracker;
@@ -41,13 +41,11 @@ public class DownloadTask implements Runnable {
     }
 
     private InputStream prepareConnection() throws IOException {
-        OkHttpClient client = new OkHttpClient();
-
         Request request = new Request.Builder()
-                .url(uri.toURL())
+                .url(url)
                 .build();
 
-        Response response = client.newCall(request).execute();
+        Response response = CLIENT.newCall(request).execute();
 
         if (response.code() != 200) {
             Log.e("ERROR", "Server returned HTTP " + response.message());

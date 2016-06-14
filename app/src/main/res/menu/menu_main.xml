@@ -8,14 +8,14 @@
         app:showAsAction="ifRoom"/>
 
     <item android:id="@+id/action_settings"
-        android:title="Settings"
+        android:title="@string/settings"
         app:showAsAction="never"/>
 
     <item android:id="@+id/action_help"
-        android:title="Hilfe"
+        android:title="@string/help"
         app:showAsAction="never"/>
 
     <item android:id="@+id/action_version"
-        android:title="Version"
+        android:title="@string/version"
         app:showAsAction="never"/>
 </menu>

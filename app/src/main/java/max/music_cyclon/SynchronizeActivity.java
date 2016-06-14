@@ -61,6 +61,8 @@ import max.music_cyclon.service.LibraryService;
  */
 public class SynchronizeActivity extends AppCompatActivity {
 
+    public static final String DEFAULT_CONFIG_PATH = "configs.json";
+
     private PagerAdapter pagerAdapter;
 
     /**
@@ -80,7 +82,9 @@ public class SynchronizeActivity extends AppCompatActivity {
     /**
      * Target we publish for clients to send messages to IncomingHandler.
      */
-    private final Messenger mMessenger = new Messenger(new IncomingHandler(new WeakReference<>(this)));
+    private final Messenger mMessenger = new Messenger(
+            new IncomingHandler(new WeakReference<>(this))
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +96,7 @@ public class SynchronizeActivity extends AppCompatActivity {
 
         List<SynchronizeConfig> configs = Collections.emptyList();
         try {
-            FileInputStream in = openFileInput("configs.json");
+            FileInputStream in = openFileInput(DEFAULT_CONFIG_PATH);
             configs = SynchronizeConfig.load(in);
             in.close();
         } catch (IOException | JSONException e) {
@@ -102,7 +106,7 @@ public class SynchronizeActivity extends AppCompatActivity {
         pagerAdapter = new PagerAdapter(configs, getSupportFragmentManager());
 
         if (pagerAdapter.getCount() == 0) {
-            pagerAdapter.add("Default");
+            pagerAdapter.add(getString(R.string.default_config_name));
         }
 
         final ViewPager pager = (ViewPager) findViewById(R.id.container);
@@ -176,7 +180,7 @@ public class SynchronizeActivity extends AppCompatActivity {
         unbindLibraryService();
 
         try {
-            FileOutputStream fos = openFileOutput("configs.json", Context.MODE_PRIVATE);
+            FileOutputStream fos = openFileOutput(DEFAULT_CONFIG_PATH, Context.MODE_PRIVATE);
             getPagerAdapter().save(fos);
             fos.close();
         } catch (IOException | JSONException e) {
@@ -217,7 +221,7 @@ public class SynchronizeActivity extends AppCompatActivity {
                 break;
             case R.id.action_sync:
                 if (isServiceRunning(LibraryService.class)) {
-                    Toast.makeText(this, "Already synchronizing!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.already_synchronizing, Toast.LENGTH_LONG).show();
                     return false;
                 }
 
@@ -227,15 +231,18 @@ public class SynchronizeActivity extends AppCompatActivity {
 
                 // Show sync control dialog
                 syncProgress = new ProgressDialog(SynchronizeActivity.this);
-                syncProgress.setMessage("Synchronizing");
+                syncProgress.setMessage(getString(R.string.synchronizing));
                 syncProgress.setCancelable(false);
-                syncProgress.setButton(DialogInterface.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-                syncProgress.show();
+//                syncProgress.setButton(
+//                        DialogInterface.BUTTON_NEGATIVE,
+//                        getString(android.R.string.cancel),
+//                        new DialogInterface.OnClickListener() {
+//                            @Override
+//                            public void onClick(DialogInterface dialog, int which) {
+//                                dialog.dismiss();
+//                            }
+//                        });
+//                syncProgress.show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -257,16 +264,21 @@ public class SynchronizeActivity extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg) {
+            SynchronizeActivity activity = this.activity.get();
+            if (activity == null) {
+                return;
+            }
+
             switch (msg.what) {
                 case LibraryService.MSG_FINISHED:
-                    SynchronizeActivity activity = this.activity.get();
-                    if (activity != null) {
-                        Dialog dialog = activity.getSyncProgress();
-                        if (dialog != null) {
-                            dialog.dismiss();
-                            activity.clearSyncProgress();
-                        }
+                    activity.unbindLibraryService();
+
+                    Dialog dialog = activity.getSyncProgress();
+                    if (dialog != null) {
+                        dialog.dismiss();
+                        activity.clearSyncProgress();
                     }
+
                     break;
                 default:
                     super.handleMessage(msg);
@@ -301,17 +313,30 @@ public class SynchronizeActivity extends AppCompatActivity {
     private void startLibraryService() {
         Intent intent = new Intent(SynchronizeActivity.this, LibraryService.class);
         List<SynchronizeConfig> configs = getPagerAdapter().getConfigs();
-        intent.putExtra("configs", configs.toArray(new SynchronizeConfig[configs.size()]));
+
+        // Update last updated
+        for (SynchronizeConfig config : configs) {
+            config.updateLastUpdated(); // fixme the result of LibraryService does not affect this (for example: Remote not available)
+        }
+
+        intent.putExtra(
+                LibraryService.ARGUMENT_CONFIGS,
+                configs.toArray(new SynchronizeConfig[configs.size()])
+        );
         startService(intent);
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+        List<ActivityManager.RunningServiceInfo> services =
+                manager.getRunningServices(Integer.MAX_VALUE);
+
+        for (ActivityManager.RunningServiceInfo service : services) {
             if (serviceClass.getName().equals(service.service.getClassName())) {
                 return true;
             }
         }
+
         return false;
     }
 

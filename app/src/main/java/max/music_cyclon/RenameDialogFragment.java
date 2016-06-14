@@ -2,7 +2,6 @@ package max.music_cyclon;
 
 
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -37,7 +36,7 @@ public class RenameDialogFragment extends DialogFragment {
         newName = new EditText(getActivity());
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
-                .setTitle("Rename")
+                .setTitle(getActivity().getString(R.string.rename))
                 .setView(newName)
                 .setPositiveButton(android.R.string.ok, new ApplyRename())
                 .setNegativeButton(android.R.string.cancel, STUB_CLICK);

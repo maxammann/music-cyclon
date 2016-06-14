@@ -21,7 +21,16 @@ import java.util.Scanner;
  */
 public class SynchronizeConfig implements Parcelable {
 
-    public static final Random RANDOM = new Random();
+    private static final Random RANDOM = new Random();
+
+    private static final String ID_KEY = "id";
+    private static final String SIZE_KEY = "size";
+    private static final String RANDOM_KEY = "random";
+    private static final String ALBUM_KEY = "use_albums";
+    private static final String QUERY_KEY = "query";
+    private static final String START_CHARGING_KEY = "start_charging";
+    private static final String DOWNLOAD_INTERVAL_KEY = "download_interval";
+
     /**
      * The name of this config
      */
@@ -40,7 +49,7 @@ public class SynchronizeConfig implements Parcelable {
     public SynchronizeConfig(String name, long id) {
         this(name, new JSONObject());
         try {
-            json.put("id", id);
+            json.put(ID_KEY, id);
         } catch (JSONException e) {
             throw new RuntimeException("Failed setting id!");
         }
@@ -52,7 +61,7 @@ public class SynchronizeConfig implements Parcelable {
 
     public long getID() {
         try {
-            return json.getLong("id");
+            return json.getLong(ID_KEY);
         } catch (JSONException e) {
             throw new RuntimeException("Config has no id!");
         }
@@ -66,28 +75,41 @@ public class SynchronizeConfig implements Parcelable {
         this.name = name;
     }
 
+    public long getLastUpdated() {
+        return json.optLong("last_update", 0);
+    }
+
+    public void updateLastUpdated() {
+        try {
+            json.put("last_update", System.currentTimeMillis());
+        } catch (JSONException ignored) {
+            throw new RuntimeException("Failed to set last_update!");
+        }
+    }
+
     public int getSize(Resources resources) {
-        return json.optInt("size", resources.getInteger(R.integer.size));
+        return json.optInt(SIZE_KEY, resources.getInteger(R.integer.size));
     }
 
     public boolean isRandom(Resources resources) {
-        return json.optBoolean("size", resources.getBoolean(R.bool.random));
+        return json.optBoolean(RANDOM_KEY, resources.getBoolean(R.bool.random));
     }
 
     public boolean isAlbum(Resources resources) {
-        return json.optBoolean("use_albums", resources.getBoolean(R.bool.use_albums));
+        return json.optBoolean(ALBUM_KEY, resources.getBoolean(R.bool.use_albums));
     }
 
     public String getQuery(Resources resources) {
-        return json.optString("query", resources.getString(R.string.query));
+        return json.optString(QUERY_KEY, resources.getString(R.string.query));
     }
 
     public boolean isStartCharging(Resources resources) {
-        return json.optBoolean("start_charging", resources.getBoolean(R.bool.start_charging));
+        return json.optBoolean(START_CHARGING_KEY, resources.getBoolean(R.bool.start_charging));
     }
 
     public int getDownloadInterval(Resources resources) {
-        return json.optInt("download_interval", resources.getInteger(R.integer.download_interval));
+        return json.optInt(DOWNLOAD_INTERVAL_KEY,
+                resources.getInteger(R.integer.download_interval));
     }
 
     public JSONObject getJson() {
@@ -105,19 +127,7 @@ public class SynchronizeConfig implements Parcelable {
         dest.writeString(json.toString());
     }
 
-    public static final Parcelable.Creator<SynchronizeConfig> CREATOR = new Parcelable.Creator<SynchronizeConfig>() {
-        public SynchronizeConfig createFromParcel(Parcel in) {
-            try {
-                return new SynchronizeConfig(in.readString(), new JSONObject(in.readString()));
-            } catch (JSONException e) {
-                return new SynchronizeConfig("none");
-            }
-        }
-
-        public SynchronizeConfig[] newArray(int size) {
-            return new SynchronizeConfig[size];
-        }
-    };
+    public static final Creator<SynchronizeConfig> CREATOR = new SynchronizeConfigCreator();
 
     public static List<SynchronizeConfig> load(InputStream in) throws JSONException {
         String data = convertStreamToString(in);
@@ -160,4 +170,17 @@ public class SynchronizeConfig implements Parcelable {
         return s.hasNext() ? s.next() : "";
     }
 
+    private static class SynchronizeConfigCreator implements Creator<SynchronizeConfig> {
+        public SynchronizeConfig createFromParcel(Parcel in) {
+            try {
+                return new SynchronizeConfig(in.readString(), new JSONObject(in.readString()));
+            } catch (JSONException e) {
+                return new SynchronizeConfig("none");
+            }
+        }
+
+        public SynchronizeConfig[] newArray(int size) {
+            return new SynchronizeConfig[size];
+        }
+    }
 }

@@ -26,15 +26,28 @@ public class ProgressUpdater {
         this.notificationManager = NotificationManagerCompat.from(context);
     }
 
-    public void showMessage(String message, boolean persist, Object... args) {
-        showMessage(String.format(message, args), persist);
+    public void showMessage(String message, Object... args) {
+        showMessage(String.format(message, args));
     }
 
-    public void showMessage(String message, boolean persist) {
+    public void showMessage(String message) {
         NotificationCompat.Builder builder = notificationBuilder();
         builder.setContentTitle(message);
-        builder.setContentText("");
-        builder.setProgress(0, 0, !persist);
+
+        updateNotification(builder);
+    }
+
+    public void showOngoingMessage(String message, Object... args) {
+        showOngoingMessage(String.format(message, args));
+    }
+
+
+    public void showOngoingMessage(String message) {
+        NotificationCompat.Builder builder = notificationBuilder();
+        builder.setContentTitle(message);
+        builder.setProgress(0, 0, true);
+        builder.setOngoing(true);
+
         updateNotification(builder);
     }
 
@@ -45,6 +58,7 @@ public class ProgressUpdater {
         builder.setContentTitle("Aktualisiere Musik");
         builder.setContentText(downloadCount + "/" + maximum);
         builder.setProgress(maximum, downloadCount, false);
+        builder.setOngoing(true);
         updateNotification(builder);
     }
 
@@ -52,13 +66,13 @@ public class ProgressUpdater {
         this.maximum = maximum;
     }
 
-    private void updateNotification(NotificationCompat.Builder builder) {
+    public void updateNotification(NotificationCompat.Builder builder) {
         notificationManager.notify(NOTIFICATION_ID, builder.build());
     }
 
-    private NotificationCompat.Builder notificationBuilder() {
+    public NotificationCompat.Builder notificationBuilder() {
         return new NotificationCompat.Builder(context)
-                .setSmallIcon(R.mipmap.ic_launcher);
+                .setSmallIcon(R.drawable.ic_sync_white_24dp);
     }
 
     private NotificationCompat.Builder progressNotificationBuilder() {

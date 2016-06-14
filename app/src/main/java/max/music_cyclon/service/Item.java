@@ -5,11 +5,11 @@ public class Item {
     private int id;
     private String path;
 
-    public int getId() {
+    public int getID() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setID(int id) {
         this.id = id;
     }
 

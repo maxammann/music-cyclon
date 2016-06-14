@@ -142,7 +142,7 @@ public class BeetsFetcher {
             String tag = reader.nextName();
             switch (tag) {
                 case "id":
-                    item.setId(reader.nextInt());
+                    item.setID(reader.nextInt());
                     break;
                 case "path":
                     item.setPath(reader.nextString());

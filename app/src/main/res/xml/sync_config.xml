@@ -11,12 +11,12 @@
         android:summary="The amount of tracks or albums to download"
         android:title="Number of items" />
 
-    <!--<SwitchPreference-->
-    <!--android:persistent="false"-->
-    <!--android:defaultValue="@bool/random"-->
-    <!--android:key="random"-->
-    <!--android:summary=""-->
-    <!--android:title="Select title/albums randomly" />-->
+    <SwitchPreference
+        android:defaultValue="@bool/random"
+        android:key="random"
+        android:persistent="false"
+        android:summary="Select title/albums randomly"
+        android:title="Random" />
 
     <SwitchPreference
         android:defaultValue="@bool/use_albums"
