@@ -4,9 +4,8 @@ Android app to synchronize music or files over network by using the [beets](http
 
 ## Preview
 
-![](https://raw.githubusercontent.com/maxammann/music-cyclon/master/img/screenshot/Screenshot_20160614-205250.png =200x)
-![](https://raw.githubusercontent.com/maxammann/music-cyclon/master/img/screenshot/Screenshot_20160614-205302.png =200x)
-
+<img src="https://raw.githubusercontent.com/maxammann/music-cyclon/master/img/screenshot/Screenshot_20160614-205250.png" height="200" />
+<img src="https://raw.githubusercontent.com/maxammann/music-cyclon/master/img/screenshot/Screenshot_20160614-205302.png" height="200" />
 ## Compilation
 
 The gradle build should work flawlessly
