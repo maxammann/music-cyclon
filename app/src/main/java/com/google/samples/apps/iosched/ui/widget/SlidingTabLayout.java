@@ -77,6 +77,8 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
     private final SlidingTabStrip mTabStrip;
 
+    private OnLongClickListener tabLongClickListener = null;
+
     public SlidingTabLayout(Context context) {
         this(context, null);
     }
@@ -112,6 +114,16 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
     public void setDistributeEvenly(boolean distributeEvenly) {
         mDistributeEvenly = distributeEvenly;
+    }
+
+    /**
+     * Sets the listener for long clicks on tabs
+     * Should be set before calling {@link #setViewPager(ViewPager)}
+     *
+     * @param longClickListener The listener
+     */
+    public void setTabLongClickListener(OnLongClickListener longClickListener) {
+        this.tabLongClickListener = longClickListener;
     }
 
     /**
@@ -213,6 +225,7 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
             tabTitleView.setText(adapter.getPageTitle(i));
             tabView.setOnClickListener(tabClickListener);
+            tabView.setOnLongClickListener(tabLongClickListener);
             String desc = mContentDescriptions.get(i, null);
             if (desc != null) {
                 tabView.setContentDescription(desc);
