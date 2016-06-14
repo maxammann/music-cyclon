@@ -1,4 +1,4 @@
-package max.music_cyclon.service.db;
+package max.music_cyclon.tracker;
 
 
 import android.content.ContentValues;
@@ -13,8 +13,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.zip.Adler32;
 
-public class FileTracker {
+import max.music_cyclon.SynchronizeConfig;
 
+public class FileTracker {
 
     private final LibraryDBOpenHelper helper;
 
@@ -22,11 +23,12 @@ public class FileTracker {
         helper = new LibraryDBOpenHelper(context);
     }
 
-    public void track(File file, long checksum) {
+    public void track(SynchronizeConfig config, File file, long checksum) {
         SQLiteDatabase db = helper.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("path", file.getAbsolutePath());
         values.put("checksum", checksum);
+        values.put("config", config.getID());
 
         db.insert("library", null, values);
         db.close();
