@@ -9,52 +9,76 @@ import org.json.JSONException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Holds the fragments for the configuration of all {@link SynchronizeConfig}s
  */
 public class PagerAdapter extends FragmentStatePagerAdapter {
 
-    private final List<String> configs = new ArrayList<>();
+    private final List<SynchronizeConfig> configs = new ArrayList<>();
 
-    private final Map<String, SynchronizeConfig> configData = new HashMap<>();
-
-    public PagerAdapter(List<SynchronizeConfig> configs , FragmentManager fm) {
+    public PagerAdapter(Collection<SynchronizeConfig> configs , FragmentManager fm) {
         super(fm);
 
-
-        for (SynchronizeConfig config : configs) {
-            this.configs.add(config.getName());
-            this.configData.put(config.getName(), config);
-        }
+        this.configs.addAll(configs);
     }
 
     public void save(OutputStream os) throws JSONException, IOException {
-        SynchronizeConfig.save(configData.values(), os);
+        SynchronizeConfig.save(configs, os);
     }
 
-    public boolean add(String name) {
-        configData.put(name, new SynchronizeConfig(name));
-        return configs.add(name);
+    public void add(String name) {
+        configs.add(new SynchronizeConfig(name));
+        notifyDataSetChanged();
     }
 
     public void remove(String name) {
-        configData.remove(name);
-        configs.remove(name);
+        int index = indexOf(name);
+
+        if (index < 0) {
+            return;
+        }
+
+        configs.remove(index);
+        notifyDataSetChanged();
+    }
+
+    public void rename(String name, String newName) {
+        int index = indexOf(name);
+
+        if (index < 0) {
+            return;
+        }
+
+        SynchronizeConfig config = configs.get(index);
+
+        config.setName(newName);
+
+        notifyDataSetChanged();
+    }
+
+    public int indexOf(String name) {
+        for (int i = 0, size = configs.size(); i < size; i++) {
+            SynchronizeConfig config = configs.get(i);
+            if (config.getName().equals(name)) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     @Override
     public Fragment getItem(int i) {
         SynchronizeConfigFragment fragment = new SynchronizeConfigFragment();
 
-        String name = getConfigs().get(i);
+        SynchronizeConfig config = getConfigs().get(i);
 
-        fragment.setName(name);
+        fragment.setName(config.getName());
         fragment.setPagerAdapter(this);
-        fragment.setConfig(configData.get(name));
+        fragment.setConfig(config);
         return fragment;
     }
 
@@ -69,16 +93,12 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
         return PagerAdapter.POSITION_NONE;
     }
 
-    public List<String> getConfigs() {
+    public List<SynchronizeConfig> getConfigs() {
         return configs;
-    }
-
-    public List<SynchronizeConfig> getConfigData() {
-        return new ArrayList<>(configData.values());
     }
 
     @Override
     public CharSequence getPageTitle(int position) {
-        return getConfigs().get(position);
+        return configs.get(position).getName();
     }
 }
