@@ -13,13 +13,23 @@
         android:theme="@style/AppTheme">
         <service
             android:name=".service.LibraryService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:launchMode="singleInstance"
+            />
+        <!--android:process=":sync_service"-->
+        <receiver android:name=".service.PowerConnectionReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+            </intent-filter>
+        </receiver>
 
-        <!--<receiver android:name=".service.PowerConnectionReceiver">-->
-            <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.ACTION_POWER_CONNECTED" />-->
-            <!--</intent-filter>-->
-        <!--</receiver>-->
+        <receiver
+            android:name=".tracker.ForceClearReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="max.music_cyclon.force_clear" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".SynchronizeActivity"
@@ -31,7 +41,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".preference.MainPreferenceActivity"/>
+        <activity android:name=".preference.MainPreferenceActivity" />
     </application>
 
 </manifest>

@@ -2,6 +2,7 @@ package max.music_cyclon.service;
 
 import android.Manifest;
 import android.app.IntentService;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -13,17 +14,15 @@ import android.os.Messenger;
 import android.os.Parcelable;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.maxmpz.poweramp.player.PowerampAPI;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -56,6 +55,8 @@ public class LibraryService extends IntentService {
     public static final int MSG_STARTED = 4;
     public static final int MSG_FINISHED = 5;
 
+    public static final String ARGUMENT_CONFIGS = "configs";
+
     /**
      * Keeps track of all current registered clients.
      */
@@ -75,7 +76,7 @@ public class LibraryService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        Parcelable[] configs = intent.getParcelableArrayExtra("configs");
+        Parcelable[] configs = intent.getParcelableArrayExtra(ARGUMENT_CONFIGS);
 
         ProgressUpdater updater = new ProgressUpdater(this);
 
@@ -83,7 +84,7 @@ public class LibraryService extends IntentService {
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            updater.showMessage("No permission to write!", false);
+            updater.showMessage("No permission to write!");
             finished();
             return;
         }
@@ -98,7 +99,7 @@ public class LibraryService extends IntentService {
         BeetsFetcher fetcher = new BeetsFetcher(address, getResources());
 
         if (root.exists() && !root.isDirectory()) {
-            updater.showMessage("Library is no dictionary! Fix manually", false);
+            updater.showMessage("Library is no dictionary! Fix manually");
             finished();
             return;
         }
@@ -108,14 +109,22 @@ public class LibraryService extends IntentService {
         FileTracker tracker = new FileTracker(getApplicationContext());
 
         try {
-            updater.showMessage("Cleaning library", true);
+            updater.showOngoingMessage("Cleaning library");
             tracker.delete();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         if (root.exists() && root.list().length != 0) {
-            updater.showMessage("Library not empty! Clean in manually", false);
+            NotificationCompat.Builder builder = updater.notificationBuilder();
+            builder.setContentTitle("Library not empty! Clean in manually");
+            Intent libraryIntent = new Intent();
+            libraryIntent.setAction("max.music_cyclon.force_clear");
+
+            PendingIntent pending = PendingIntent.getBroadcast(this, 0, libraryIntent, 0);
+            builder.addAction(android.R.drawable.ic_delete, "Clear now", pending);
+            updater.updateNotification(builder);
+
             finished();
             return;
         }
@@ -126,25 +135,21 @@ public class LibraryService extends IntentService {
             SynchronizeConfig config = (SynchronizeConfig) parcelable;
             List<Item> items;
             try {
-                updater.showMessage("Fetching music information for %s", true, config.getName());
+                updater.showOngoingMessage("Fetching music information for %s", config.getName());
                 items = fetcher.fetch(config);
             } catch (IOException e) {
                 Log.wtf("WTF", e);
-                updater.showMessage("Remote not available", false);
+                updater.showMessage("Remote not available");
                 finished();
                 return;
             }
 
-            updater.showMessage("Mixing new music for %s!", true, config.getName());
+            updater.showOngoingMessage("Mixing new music for %s!", config.getName());
             updater.setMaximumProgress(items.size());
 
             for (Item item : items) {
-                try {
-                    URI uri = new URI(address + "/item/" + item.getId() + "/file");
-                    tasks.add(new DownloadTask(config, uri, item.getPath(), tracker, updater));
-                } catch (URISyntaxException e) {
-                    e.printStackTrace();
-                }
+                String url = address + "/item/" + item.getID() + "/file";
+                tasks.add(new DownloadTask(config, url, item.getPath(), tracker, updater));
             }
         }
 
@@ -163,17 +168,14 @@ public class LibraryService extends IntentService {
             e.printStackTrace();
         }
 
-        updater.showMessage("Musik aktualisiert", false);
-
-        // Update last_updated info
-        SharedPreferences preferences = getSharedPreferences("info", MODE_PRIVATE);
-        preferences.edit().putLong("last_updated", System.currentTimeMillis()).apply();
+        updater.showMessage("Musik aktualisiert");
 
         // Poweramp support
         Intent poweramp = new Intent(PowerampAPI.Scanner.ACTION_SCAN_DIRS);
         poweramp.setPackage(PowerampAPI.PACKAGE_NAME);
         poweramp.putExtra(PowerampAPI.Scanner.EXTRA_FULL_RESCAN, true);
         startService(poweramp);
+
 
         finished();
     }
