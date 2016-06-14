@@ -14,7 +14,7 @@
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/viewer"
-        android:name="max.music_cyclon.MainPreferenceActivity$MainPreferenceFragment"
+        android:name="max.music_cyclon.preference.MainPreferenceActivity$MainPreferenceFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 </LinearLayout>

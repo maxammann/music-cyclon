@@ -26,16 +26,15 @@ public class ProgressUpdater {
         this.notificationManager = NotificationManagerCompat.from(context);
     }
 
-    public void showMessage(String message, Object... args) {
-        showMessage(String.format(message, args));
+    public void showMessage(String message, boolean persist, Object... args) {
+        showMessage(String.format(message, args), persist);
     }
 
-    public void showMessage(String message) {
+    public void showMessage(String message, boolean persist) {
         NotificationCompat.Builder builder = notificationBuilder();
-
         builder.setContentTitle(message);
         builder.setContentText("");
-        builder.setProgress(0, 0, false);
+        builder.setProgress(0, 0, !persist);
         updateNotification(builder);
     }
 

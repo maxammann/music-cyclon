@@ -10,18 +10,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.zip.Adler32;
 
-import cz.msebera.android.httpclient.client.methods.CloseableHttpResponse;
-import cz.msebera.android.httpclient.client.methods.HttpGet;
-import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
-import cz.msebera.android.httpclient.impl.client.HttpClients;
-import max.music_cyclon.service.db.FileTracker;
+import max.music_cyclon.SynchronizeConfig;
+import max.music_cyclon.tracker.FileTracker;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class DownloadTask implements Runnable {
 
+    private final SynchronizeConfig config;
     private final URI uri;
     private final String itemPath;
 
@@ -29,30 +29,36 @@ public class DownloadTask implements Runnable {
     private final ProgressUpdater progressUpdater;
     private CountDownLatch itemsLeftLatch;
 
-    private static final CloseableHttpClient httpclient = HttpClients.createDefault();
 
-    public DownloadTask(URI uri, String itemPath,
-                        FileTracker tracker, ProgressUpdater progressUpdater,
-                        CountDownLatch itemsLeftLatch) {
+    public DownloadTask(SynchronizeConfig config, URI uri, String itemPath,
+                        FileTracker tracker, ProgressUpdater progressUpdater) {
+        this.config = config;
         this.uri = uri;
         this.itemPath = itemPath;
 
         this.tracker = tracker;
         this.progressUpdater = progressUpdater;
-        this.itemsLeftLatch = itemsLeftLatch;
     }
 
     private InputStream prepareConnection() throws IOException {
-        HttpGet httpGet = new HttpGet(uri);
+        OkHttpClient client = new OkHttpClient();
 
-        CloseableHttpResponse response = httpclient.execute(httpGet);
+        Request request = new Request.Builder()
+                .url(uri.toURL())
+                .build();
 
-        if (response.getStatusLine().getStatusCode() != 200) {
-            Log.e("ERROR", "Server returned HTTP " + response.getStatusLine().getStatusCode());
+        Response response = client.newCall(request).execute();
+
+        if (response.code() != 200) {
+            Log.e("ERROR", "Server returned HTTP " + response.message());
             return null;
         }
 
-        return response.getEntity().getContent();
+        return response.body().byteStream();
+    }
+
+    public void setItemsLeftLatch(CountDownLatch itemsLeftLatch) {
+        this.itemsLeftLatch = itemsLeftLatch;
     }
 
     @Override
@@ -81,9 +87,9 @@ public class DownloadTask implements Runnable {
                 input.close();
             }
 
-            tracker.track(target, checksum.getValue());
+            tracker.track(config, target, checksum.getValue());
         } catch (IOException e) {
-            Log.wtf("WTF", e);
+            Log.e("DOWNLOAD", "Failed to download", e);
         }
 
         progressUpdater.increment();

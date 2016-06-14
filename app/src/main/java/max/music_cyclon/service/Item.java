@@ -3,9 +3,7 @@ package max.music_cyclon.service;
 public class Item {
 
     private int id;
-    private String name;
-    private String artist;
-    private String album;
+    private String path;
 
     public int getId() {
         return id;
@@ -15,27 +13,11 @@ public class Item {
         this.id = id;
     }
 
-    public String getAlbum() {
-        return album;
+    public String getPath() {
+        return path;
     }
 
-    public void setAlbum(String album) {
-        this.album = album;
-    }
-
-    public String getArtist() {
-        return artist;
-    }
-
-    public void setArtist(String artist) {
-        this.artist = artist;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setPath(String path) {
+        this.path = path;
     }
 }
