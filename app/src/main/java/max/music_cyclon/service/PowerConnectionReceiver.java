@@ -4,24 +4,26 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.os.BatteryManager;
-import android.preference.PreferenceManager;
+import android.util.Log;
 
+import org.json.JSONException;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import max.music_cyclon.SynchronizeActivity;
+import max.music_cyclon.SynchronizeConfig;
 
 public class PowerConnectionReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-        boolean start = settings.getBoolean("start_charging", false);
-
-        if (!start) {
-            return;
-        }
-
-
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = context.registerReceiver(null, ifilter);
 
@@ -37,14 +39,50 @@ public class PowerConnectionReceiver extends BroadcastReceiver {
         boolean acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC;
 
         if (acCharge && isCharging) {
+            // todo the latest changes, if the app is running are not available at this point
 
-            SharedPreferences preferences = context.getSharedPreferences("info", Context.MODE_PRIVATE);
-            long lastUpdated = preferences.getLong("last_updated", 0);
+            List<SynchronizeConfig> loadedConfigs = Collections.emptyList();
+            try {
+                FileInputStream in = context.openFileInput(SynchronizeActivity.DEFAULT_CONFIG_PATH);
+                loadedConfigs = SynchronizeConfig.load(in);
+                in.close();
+            } catch (IOException | JSONException e) {
+                Log.e("CONFIG", "Failed loading the config", e);
+            }
 
-            if (lastUpdated < System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Integer.parseInt(settings.getString("min_download_interval", "7")))) {
-                Intent serviceIntend = new Intent(context, LibraryService.class);
+            List<SynchronizeConfig> configs = new ArrayList<>();
 
-                context.startService(serviceIntend);
+            for (SynchronizeConfig config : loadedConfigs) {
+                if (!config.isStartCharging(context.getResources())) {
+                    continue;
+                }
+
+                long lastUpdated = config.getLastUpdated();
+
+                if (lastUpdated < System.currentTimeMillis() - TimeUnit.DAYS.toMillis(config.getDownloadInterval(context.getResources()))) {
+                    configs.add(config);
+                    config.updateLastUpdated(); // fixme the result of LibraryService does not affect this (for example: Remote not available)
+                }
+            }
+
+            if (configs.isEmpty()) {
+                return;
+            }
+
+            Intent serviceIntend = new Intent(context, LibraryService.class);
+            serviceIntend.putExtra(
+                    LibraryService.ARGUMENT_CONFIGS,
+                    configs.toArray(new SynchronizeConfig[configs.size()])
+            );
+
+            context.startService(serviceIntend);
+
+            try {
+                FileOutputStream fos = context.openFileOutput(SynchronizeActivity.DEFAULT_CONFIG_PATH, Context.MODE_PRIVATE);
+                SynchronizeConfig.save(loadedConfigs, fos);
+                fos.close();
+            } catch (IOException | JSONException e) {
+                Log.e("CONFIG", "Failed saving the config", e);
             }
         }
     }
