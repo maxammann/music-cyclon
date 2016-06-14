@@ -2,6 +2,7 @@ package max.music_cyclon;
 
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
@@ -27,6 +28,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.samples.apps.iosched.ui.widget.SlidingTabLayout;
 
@@ -40,21 +43,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import max.music_cyclon.preference.MainPreferenceActivity;
 import max.music_cyclon.service.LibraryService;
 
 /**
  * The main activity for synchronisation
- * <p>
+ * <p/>
  * This class manages:
  * <ul>
  * <li>
- *     the {@link PagerAdapter} with the references to all configs and their loading and saving.
+ * the {@link PagerAdapter} with the references to all configs and their loading and saving.
  * </li>
  * <li>the link to the {@link LibraryService} with bi-directional message dispatching</li>
  * <li>the general layout</li>
  * <li>permission requests</li>
  * </ul>
- *
  */
 public class SynchronizeActivity extends AppCompatActivity {
 
@@ -98,6 +101,9 @@ public class SynchronizeActivity extends AppCompatActivity {
 
         pagerAdapter = new PagerAdapter(configs, getSupportFragmentManager());
 
+        if (pagerAdapter.getCount() == 0) {
+            pagerAdapter.add("Default");
+        }
 
         final ViewPager pager = (ViewPager) findViewById(R.id.container);
         assert pager != null;
@@ -107,6 +113,18 @@ public class SynchronizeActivity extends AppCompatActivity {
         // Initialize tabs
         final SlidingTabLayout tabs = (SlidingTabLayout) findViewById(R.id.tabs);
         assert tabs != null;
+
+        tabs.setTabLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                CharSequence name = ((TextView) v).getText();
+                RenameDialogFragment dialog = new RenameDialogFragment();
+                dialog.setPreviousName(name.toString());
+                dialog.setAdapter(getPagerAdapter());
+                dialog.show(getSupportFragmentManager(), dialog.getClass().getName());
+                return true;
+            }
+        });
 
         tabs.setDistributeEvenly(true);
         tabs.setCustomTabColorizer(new SlidingTabLayout.TabColorizer() {
@@ -143,9 +161,11 @@ public class SynchronizeActivity extends AppCompatActivity {
     private void requestPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
+            ActivityCompat.requestPermissions(
+                    this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    0);
+                    0
+            );
         }
     }
 
@@ -196,6 +216,11 @@ public class SynchronizeActivity extends AppCompatActivity {
                 notYetImplemented(this);
                 break;
             case R.id.action_sync:
+                if (isServiceRunning(LibraryService.class)) {
+                    Toast.makeText(this, "Already synchronizing!", Toast.LENGTH_LONG).show();
+                    return false;
+                }
+
                 startLibraryService();
 
                 bindLibraryService();
@@ -275,9 +300,19 @@ public class SynchronizeActivity extends AppCompatActivity {
 
     private void startLibraryService() {
         Intent intent = new Intent(SynchronizeActivity.this, LibraryService.class);
-        List<SynchronizeConfig> configs = getPagerAdapter().getConfigData();
+        List<SynchronizeConfig> configs = getPagerAdapter().getConfigs();
         intent.putExtra("configs", configs.toArray(new SynchronizeConfig[configs.size()]));
-        SynchronizeActivity.this.startService(intent);
+        startService(intent);
+    }
+
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void bindLibraryService() {
