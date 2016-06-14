@@ -1,4 +1,4 @@
-package max.music_cyclon;
+package max.music_cyclon.preference;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,6 +7,9 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
+
+import max.music_cyclon.R;
+import max.music_cyclon.SynchronizeActivity;
 
 /**
  * The activity to set general activities
