@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 
 /**
@@ -20,27 +21,49 @@ import java.util.Scanner;
  */
 public class SynchronizeConfig implements Parcelable {
 
+    public static final Random RANDOM = new Random();
     /**
      * The name of this config
      */
-    private final String name;
+    private String name;
 
     /**
      * The data structure
      */
-    private final JSONObject json;
+    private JSONObject json;
 
     public SynchronizeConfig(String name, JSONObject json) {
         this.name = name;
         this.json = json;
     }
 
-    public SynchronizeConfig(String name) {
+    public SynchronizeConfig(String name, long id) {
         this(name, new JSONObject());
+        try {
+            json.put("id", id);
+        } catch (JSONException e) {
+            throw new RuntimeException("Failed setting id!");
+        }
+    }
+
+    public SynchronizeConfig(String name) {
+        this(name, randomID(name));
+    }
+
+    public long getID() {
+        try {
+            return json.getLong("id");
+        } catch (JSONException e) {
+            throw new RuntimeException("Config has no id!");
+        }
     }
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public int getSize(Resources resources) {
@@ -113,6 +136,13 @@ public class SynchronizeConfig implements Parcelable {
         }
 
         return configs;
+    }
+
+    public static long randomID(String name) {
+        int rnd = RANDOM.nextInt();
+        int hash = name.hashCode();
+
+        return rnd + hash;
     }
 
     public static void save(Iterable<SynchronizeConfig> configs, OutputStream fos) throws JSONException, IOException {
