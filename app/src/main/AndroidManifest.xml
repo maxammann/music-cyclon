@@ -15,11 +15,11 @@
             android:name=".service.LibraryService"
             android:enabled="true" />
 
-        <receiver android:name=".service.PowerConnectionReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
-            </intent-filter>
-        </receiver>
+        <!--<receiver android:name=".service.PowerConnectionReceiver">-->
+            <!--<intent-filter>-->
+                <!--<action android:name="android.intent.action.ACTION_POWER_CONNECTED" />-->
+            <!--</intent-filter>-->
+        <!--</receiver>-->
 
         <activity
             android:name=".SynchronizeActivity"
@@ -30,7 +30,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainPreferenceActivity"></activity>
+
+        <activity android:name=".preference.MainPreferenceActivity"/>
     </application>
 
 </manifest>
