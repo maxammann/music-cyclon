@@ -33,14 +33,14 @@ public class BeetsFetcher {
         StringBuilder get;
 
         if (config.isAlbum(resources)) {
-            get = new StringBuilder("/album");
+            get = new StringBuilder("/album/");
         } else {
-            get = new StringBuilder("/item");
+            get = new StringBuilder("/item/");
         }
 
         String query = config.getQuery(resources);
         if (!query.isEmpty()) {
-            get.append("/query/").append(query);
+            get.append("query/").append(query);
         }
 
         get.append("?expand");
