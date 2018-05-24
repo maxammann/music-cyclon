@@ -105,7 +105,8 @@ public class BeetsFetcher {
 
         ArrayList<T> out = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            out.add(list.get(RANDOM.nextInt(list.size() - 1)));
+            int item = list.size() > 1 ? RANDOM.nextInt(list.size() - 1) : 0;
+            out.add(list.get(item));
         }
 
         return Collections.unmodifiableList(out);
