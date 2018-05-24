@@ -168,7 +168,7 @@ public class LibraryService extends IntentService {
             e.printStackTrace();
         }
 
-        updater.showMessage("Musik aktualisiert");
+        updater.showMessage(getResources().getString(R.string.music_updated));
 
         // Poweramp support
         Intent poweramp = new Intent(PowerampAPI.Scanner.ACTION_SCAN_DIRS);

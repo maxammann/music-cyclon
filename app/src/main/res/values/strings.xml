@@ -7,6 +7,7 @@
     <string name="version">Version</string>
     <string name="synchronizing">Synchronizing</string>
     <string name="already_synchronizing">Already synchronizing!</string>
+    <string name="music_updated">Music Updated!</string>
     <string name="default_config_name">Default</string>
     <string name="rename">Rename</string>
 </resources>
