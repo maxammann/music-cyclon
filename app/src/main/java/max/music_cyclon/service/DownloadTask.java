@@ -23,26 +23,38 @@ public class DownloadTask implements Runnable {
     private final SynchronizeConfig config;
     private final String url;
     private final String itemPath;
-
+    private final String libraryPath;
+    private final String username;
+    private final String password;
     private final FileTracker tracker;
     private final ProgressUpdater progressUpdater;
     private CountDownLatch itemsLeftLatch;
     public static final OkHttpClient CLIENT = new OkHttpClient();
 
 
-    public DownloadTask(SynchronizeConfig config, String url, String itemPath,
-                        FileTracker tracker, ProgressUpdater progressUpdater) {
+    public DownloadTask(SynchronizeConfig config, String url,
+                        String libraryPath, String itemPath,
+                        FileTracker tracker, ProgressUpdater progressUpdater,
+                        String username, String password
+    ) {
         this.config = config;
         this.url = url;
         this.itemPath = itemPath;
+        this.libraryPath = libraryPath;
+
+        this.username = username;
+        this.password = password;
 
         this.tracker = tracker;
         this.progressUpdater = progressUpdater;
     }
 
     private InputStream prepareConnection() throws IOException {
+        String auth = okhttp3.Credentials.basic(username != null ? username : "",
+                password != null ? password : "");
         Request request = new Request.Builder()
                 .url(url)
+                .header("Authorization", auth)
                 .build();
 
         Response response = CLIENT.newCall(request).execute();
@@ -61,35 +73,41 @@ public class DownloadTask implements Runnable {
 
     @Override
     public void run() {
-        File root = new File(Environment.getExternalStorageDirectory(), "library");
+        File root = new File(Environment.getExternalStorageDirectory(),
+                libraryPath);
+        if (itemPath != null) {
+            try {
+                File target = new File(root, itemPath);
+                if (! target.exists()) {
+                    Adler32 checksum = new Adler32();
 
-        try {
-            File target = new File(root, itemPath);
-            Adler32 checksum = new Adler32();
+                    InputStream input = prepareConnection();
 
-            InputStream input = prepareConnection();
+                    if (input != null) {
+                        Log.d("DOWNLOAD", "Writing file: " + target);
+                        FileOutputStream output = FileUtils.openOutputStream(target);
 
-            if (input != null) {
+                        byte[] buffer = new byte[4 * 1024];
+                        int n;
+                        while (-1 != (n = input.read(buffer))) {
+                            output.write(buffer, 0, n);
+                            checksum.update(buffer, 0, n);
+                        }
 
-                FileOutputStream output = FileUtils.openOutputStream(target);
+                        output.flush();
+                        output.close();
+                        input.close();
+                    }
 
-                byte[] buffer = new byte[4 * 1024];
-                int n;
-                while (-1 != (n = input.read(buffer))) {
-                    output.write(buffer, 0, n);
-                    checksum.update(buffer, 0, n);
+                    tracker.track(config, target, checksum.getValue());
                 }
-
-                output.flush();
-                output.close();
-                input.close();
+            } catch (IOException e) {
+                Log.e("DOWNLOAD", "Failed to download", e);
             }
-
-            tracker.track(config, target, checksum.getValue());
-        } catch (IOException e) {
-            Log.e("DOWNLOAD", "Failed to download", e);
+            Log.i("DOWNLOAD", "Success");
+        } else {
+            Log.e("DOWNLOAD", "Missing download path, FAILED!");
         }
-
         progressUpdater.increment();
         itemsLeftLatch.countDown();
     }

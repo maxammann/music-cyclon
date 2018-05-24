@@ -136,7 +136,11 @@ public class LibraryService extends IntentService {
             List<Item> items;
             try {
                 updater.showOngoingMessage("Fetching music information for %s", config.getName());
-                items = fetcher.fetch(config);
+                items = fetcher.fetch(config,
+                        globalSettings.getString("username", null),
+                        globalSettings.getString("password", null));
+                Log.d("LISTOUT", "Length: " + items.size());
+
             } catch (IOException e) {
                 Log.wtf("WTF", e);
                 updater.showMessage("Remote not available");
@@ -149,7 +153,12 @@ public class LibraryService extends IntentService {
 
             for (Item item : items) {
                 String url = address + "/item/" + item.getID() + "/file";
-                tasks.add(new DownloadTask(config, url, item.getPath(), tracker, updater));
+                tasks.add(new DownloadTask(config, url,
+                        globalSettings.getString("library_path", "library"),
+                        config.getName() + item.getPath(), tracker, updater,
+                        globalSettings.getString("username", null),
+                        globalSettings.getString("password", null)
+                        ));
             }
         }
 
@@ -175,7 +184,6 @@ public class LibraryService extends IntentService {
         poweramp.setPackage(PowerampAPI.PACKAGE_NAME);
         poweramp.putExtra(PowerampAPI.Scanner.EXTRA_FULL_RESCAN, true);
         startService(poweramp);
-
 
         finished();
     }

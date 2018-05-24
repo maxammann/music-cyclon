@@ -2,6 +2,8 @@
 <resources>
     <string name="address">http://localhost:8337</string>
     <integer name="threads">2</integer>
+    <string name="username"></string>
+    <string name="password"></string>
 
     <integer name="size">10</integer>
     <bool name="random">true</bool>

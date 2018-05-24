@@ -29,7 +29,8 @@ public class BeetsFetcher {
         this.resources = resources;
     }
 
-    public List<Item> fetch(SynchronizeConfig config) throws IOException {
+    public List<Item> fetch(SynchronizeConfig config,
+                            String username, String password) throws IOException {
         StringBuilder get;
 
         if (config.isAlbum(resources)) {
@@ -46,8 +47,11 @@ public class BeetsFetcher {
         get.append("?expand");
 
         OkHttpClient client = new OkHttpClient();
+        String auth = okhttp3.Credentials.basic(username != null ? username : "",
+                password != null ? password : "");
         Request request = new Request.Builder()
                 .url(address + get)
+                .header("Authorization", auth)
                 .build();
 
         Response response = client.newCall(request).execute();
@@ -67,7 +71,6 @@ public class BeetsFetcher {
 
     private List<Item> parseJson(InputStream stream, int size, boolean isAlbums) throws IOException {
         JsonReader reader = new JsonReader(new BufferedReader(new InputStreamReader(stream, "UTF-8")));
-
         List<Item> items = new ArrayList<>();
         List<ArrayList<Item>> albums = new ArrayList<>();
 
