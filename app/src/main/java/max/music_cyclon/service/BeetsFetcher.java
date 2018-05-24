@@ -145,8 +145,14 @@ public class BeetsFetcher {
                 case "id":
                     item.setID(reader.nextInt());
                     break;
-                case "path":
-                    item.setPath(reader.nextString());
+                case "format":
+                    item.setFormat(reader.nextString());
+                    break;
+                case "title":
+                    item.setTitle(reader.nextString());
+                    break;
+                case "artist":
+                    item.setArtist(reader.nextString());
                     break;
                 default:
                     reader.skipValue();
