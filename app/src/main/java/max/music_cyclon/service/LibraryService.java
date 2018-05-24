@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -134,7 +135,7 @@ public class LibraryService extends IntentService {
 
         for (Parcelable parcelable : configs) {
             SynchronizeConfig config = (SynchronizeConfig) parcelable;
-            List<Item> items;
+            Set<Item> items;
             try {
                 updater.showOngoingMessage("Fetching music information for %s", config.getName());
                 items = fetcher.fetch(config,

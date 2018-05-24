@@ -10,8 +10,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import max.music_cyclon.SynchronizeConfig;
 import okhttp3.OkHttpClient;
@@ -29,7 +31,7 @@ public class BeetsFetcher {
         this.resources = resources;
     }
 
-    public List<Item> fetch(SynchronizeConfig config,
+    public Set<Item> fetch(SynchronizeConfig config,
                             String username, String password) throws IOException {
         StringBuilder get;
 
@@ -58,18 +60,18 @@ public class BeetsFetcher {
 
         if (response.code() != 200) {
             Log.e("ERROR", "Server returned HTTP " + response.message());
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
 
         InputStream stream = response.body().byteStream();
-        List<Item> items = parseJson(stream, config.getSize(resources), config.isAlbum(resources));
+        Set<Item> items = parseJson(stream, config.getSize(resources), config.isAlbum(resources));
         stream.close();
 
         return items;
     }
 
-    private List<Item> parseJson(InputStream stream, int size, boolean isAlbums) throws IOException {
+    private Set<Item> parseJson(InputStream stream, int size, boolean isAlbums) throws IOException {
         JsonReader reader = new JsonReader(new BufferedReader(new InputStreamReader(stream, "UTF-8")));
         List<Item> items = new ArrayList<>();
         List<ArrayList<Item>> albums = new ArrayList<>();
@@ -90,29 +92,31 @@ public class BeetsFetcher {
 
         // Select random
         if (isAlbums) {
-            List<ArrayList<Item>> randomAlbums = selectRandom(albums, size);
+            Set<ArrayList<Item>> randomAlbums = selectRandom(albums, size);
 
-            for (ArrayList<Item> album : randomAlbums) {
+            for (List<Item> album : randomAlbums) {
                 items.addAll(album);
             }
-            return Collections.unmodifiableList(items);
+
+            return Collections.unmodifiableSet(new HashSet<Item>(items));
         } else {
             return selectRandom(items, size);
         }
     }
 
-    public <T> List<T> selectRandom(List<T> list, int n) {
+    public <T> Set<T> selectRandom(List<T> list, int n) {
         if (list.isEmpty()) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
-        ArrayList<T> out = new ArrayList<>();
+        Set<T> out = new HashSet<T>();
+
         for (int i = 0; i < n; i++) {
             int item = list.size() > 1 ? RANDOM.nextInt(list.size() - 1) : 0;
             out.add(list.get(item));
         }
 
-        return Collections.unmodifiableList(out);
+        return Collections.unmodifiableSet(out);
     }
 
     private ArrayList<Item> parseAlbum(JsonReader reader) throws IOException {
