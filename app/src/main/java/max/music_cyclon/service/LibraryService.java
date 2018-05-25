@@ -18,7 +18,8 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
-import com.maxmpz.poweramp.player.PowerampAPI;
+// Poweramp support
+// import com.maxmpz.poweramp.player.PowerampAPI;
 
 import java.io.File;
 import java.io.IOException;
@@ -179,11 +180,12 @@ public class LibraryService extends IntentService {
 
         updater.showMessage(getResources().getString(R.string.music_updated));
 
-        // Poweramp support
-        Intent poweramp = new Intent(PowerampAPI.Scanner.ACTION_SCAN_DIRS);
-        poweramp.setPackage(PowerampAPI.PACKAGE_NAME);
-        poweramp.putExtra(PowerampAPI.Scanner.EXTRA_FULL_RESCAN, true);
-        startService(poweramp);
+        // I don't want to support proprietary things
+	// If you need to enable Poweramp support, uncomment this
+        // Intent poweramp = new Intent(PowerampAPI.Scanner.ACTION_SCAN_DIRS);
+        // poweramp.setPackage(PowerampAPI.PACKAGE_NAME);
+        // poweramp.putExtra(PowerampAPI.Scanner.EXTRA_FULL_RESCAN, true);
+        // startService(poweramp);
 
         finished();
     }
