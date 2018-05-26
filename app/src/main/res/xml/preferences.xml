@@ -7,12 +7,32 @@
         android:key="address"
         android:summary="Address of the synchronisation server"
         android:title="Address" />
-
     <EditTextPreference
         android:defaultValue="@integer/threads"
         android:inputType="number"
         android:key="threads"
         android:summary="Number of threads to use for downloading"
         android:title="Threads" />
+    <EditTextPreference
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:key="library_path"
+        android:summary="Where to save the music"
+        android:title="Library Path" />
+    <EditTextPreference
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:key="username"
+        android:summary="HTTP auth username, if required!"
+        android:title="HTTP username" />
+    <EditTextPreference
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="textPassword"
+        android:key="password"
+        android:summary="HTTP auth password, if required!"
+        android:title="HTTP Password" />
 
 </PreferenceScreen>

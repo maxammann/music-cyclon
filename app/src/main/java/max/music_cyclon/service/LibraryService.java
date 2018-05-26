@@ -18,13 +18,15 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
-import com.maxmpz.poweramp.player.PowerampAPI;
+// Poweramp support
+// import com.maxmpz.poweramp.player.PowerampAPI;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -133,10 +135,14 @@ public class LibraryService extends IntentService {
 
         for (Parcelable parcelable : configs) {
             SynchronizeConfig config = (SynchronizeConfig) parcelable;
-            List<Item> items;
+            Set<Item> items;
             try {
                 updater.showOngoingMessage("Fetching music information for %s", config.getName());
-                items = fetcher.fetch(config);
+                items = fetcher.fetch(config,
+                        globalSettings.getString("username", null),
+                        globalSettings.getString("password", null));
+                Log.d("LISTOUT", "Length: " + items.size());
+
             } catch (IOException e) {
                 Log.wtf("WTF", e);
                 updater.showMessage("Remote not available");
@@ -149,7 +155,12 @@ public class LibraryService extends IntentService {
 
             for (Item item : items) {
                 String url = address + "/item/" + item.getID() + "/file";
-                tasks.add(new DownloadTask(config, url, item.getPath(), tracker, updater));
+                tasks.add(new DownloadTask(config, url,
+                        globalSettings.getString("library_path", "library"),
+                        config.getName() + item.getPath(), tracker, updater,
+                        globalSettings.getString("username", null),
+                        globalSettings.getString("password", null)
+                        ));
             }
         }
 
@@ -168,14 +179,14 @@ public class LibraryService extends IntentService {
             e.printStackTrace();
         }
 
-        updater.showMessage("Musik aktualisiert");
+        updater.showMessage(getResources().getString(R.string.music_updated));
 
-        // Poweramp support
-        Intent poweramp = new Intent(PowerampAPI.Scanner.ACTION_SCAN_DIRS);
-        poweramp.setPackage(PowerampAPI.PACKAGE_NAME);
-        poweramp.putExtra(PowerampAPI.Scanner.EXTRA_FULL_RESCAN, true);
-        startService(poweramp);
-
+        // I don't want to support proprietary things
+	// If you need to enable Poweramp support, uncomment this
+        // Intent poweramp = new Intent(PowerampAPI.Scanner.ACTION_SCAN_DIRS);
+        // poweramp.setPackage(PowerampAPI.PACKAGE_NAME);
+        // poweramp.putExtra(PowerampAPI.Scanner.EXTRA_FULL_RESCAN, true);
+        // startService(poweramp);
 
         finished();
     }

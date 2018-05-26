@@ -10,8 +10,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import max.music_cyclon.SynchronizeConfig;
 import okhttp3.OkHttpClient;
@@ -29,45 +31,48 @@ public class BeetsFetcher {
         this.resources = resources;
     }
 
-    public List<Item> fetch(SynchronizeConfig config) throws IOException {
+    public Set<Item> fetch(SynchronizeConfig config,
+                            String username, String password) throws IOException {
         StringBuilder get;
 
         if (config.isAlbum(resources)) {
-            get = new StringBuilder("/album");
+            get = new StringBuilder("/album/");
         } else {
-            get = new StringBuilder("/item");
+            get = new StringBuilder("/item/");
         }
 
         String query = config.getQuery(resources);
         if (!query.isEmpty()) {
-            get.append("/query/").append(query);
+            get.append("query/").append(query);
         }
 
         get.append("?expand");
 
         OkHttpClient client = new OkHttpClient();
+        String auth = okhttp3.Credentials.basic(username != null ? username : "",
+                password != null ? password : "");
         Request request = new Request.Builder()
                 .url(address + get)
+                .header("Authorization", auth)
                 .build();
 
         Response response = client.newCall(request).execute();
 
         if (response.code() != 200) {
             Log.e("ERROR", "Server returned HTTP " + response.message());
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
 
         InputStream stream = response.body().byteStream();
-        List<Item> items = parseJson(stream, config.getSize(resources), config.isAlbum(resources));
+        Set<Item> items = parseJson(stream, config.getSize(resources), config.isAlbum(resources));
         stream.close();
 
         return items;
     }
 
-    private List<Item> parseJson(InputStream stream, int size, boolean isAlbums) throws IOException {
+    private Set<Item> parseJson(InputStream stream, int size, boolean isAlbums) throws IOException {
         JsonReader reader = new JsonReader(new BufferedReader(new InputStreamReader(stream, "UTF-8")));
-
         List<Item> items = new ArrayList<>();
         List<ArrayList<Item>> albums = new ArrayList<>();
 
@@ -87,28 +92,31 @@ public class BeetsFetcher {
 
         // Select random
         if (isAlbums) {
-            List<ArrayList<Item>> randomAlbums = selectRandom(albums, size);
+            Set<ArrayList<Item>> randomAlbums = selectRandom(albums, size);
 
-            for (ArrayList<Item> album : randomAlbums) {
+            for (List<Item> album : randomAlbums) {
                 items.addAll(album);
             }
-            return Collections.unmodifiableList(items);
+
+            return Collections.unmodifiableSet(new HashSet<Item>(items));
         } else {
             return selectRandom(items, size);
         }
     }
 
-    public <T> List<T> selectRandom(List<T> list, int n) {
+    public <T> Set<T> selectRandom(List<T> list, int n) {
         if (list.isEmpty()) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
-        ArrayList<T> out = new ArrayList<>();
+        Set<T> out = new HashSet<T>();
+
         for (int i = 0; i < n; i++) {
-            out.add(list.get(RANDOM.nextInt(list.size() - 1)));
+            int item = list.size() > 1 ? RANDOM.nextInt(list.size() - 1) : 0;
+            out.add(list.get(item));
         }
 
-        return Collections.unmodifiableList(out);
+        return Collections.unmodifiableSet(out);
     }
 
     private ArrayList<Item> parseAlbum(JsonReader reader) throws IOException {
@@ -144,8 +152,14 @@ public class BeetsFetcher {
                 case "id":
                     item.setID(reader.nextInt());
                     break;
-                case "path":
-                    item.setPath(reader.nextString());
+                case "format":
+                    item.setFormat(reader.nextString());
+                    break;
+                case "title":
+                    item.setTitle(reader.nextString());
+                    break;
+                case "artist":
+                    item.setArtist(reader.nextString());
                     break;
                 default:
                     reader.skipValue();
